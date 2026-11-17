@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2317101f'/%3E%3Ctext x='8' y='12' font-size='10' font-family='sans-serif' font-weight='900' fill='%23ff9d5c' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E">
+<title>Neon Harbor — Port Solace</title>
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#17101f; font-family:"Avenir Next","Segoe UI",system-ui,sans-serif; color:#f3eefc; }
+  #view { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  .hidden { display:none !important; }
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:5; }
+  #topbar { position:absolute; top:14px; right:18px; text-align:right; }
+  #cash { font-size:26px; font-weight:800; letter-spacing:.5px; color:#7dffb0; text-shadow:0 2px 10px rgba(0,0,0,.75); }
+  #cash small { display:block; font-size:11px; font-weight:600; color:#cfc4e8; letter-spacing:2px; }
+  #stars { font-size:24px; letter-spacing:3px; min-height:30px; }
+  #stars .on { color:#ffd94d; text-shadow:0 0 12px rgba(255,180,0,.9), 0 2px 4px rgba(0,0,0,.8); }
+  #stars .off { color:rgba(255,255,255,.22); text-shadow:0 2px 4px rgba(0,0,0,.6); }
+  #stars.blink .on { animation: starblink .5s steps(2) infinite; }
+  @keyframes starblink { 50% { opacity:.25; } }
+  #bl { position:absolute; left:16px; bottom:16px; display:flex; gap:12px; align-items:flex-end; }
+  #minimap { width:172px; height:172px; border-radius:50%; border:3px solid rgba(10,8,18,.85); box-shadow:0 4px 18px rgba(0,0,0,.6); background:#101018; }
+  #bars { width:190px; padding-bottom:4px; }
+  .barlabel { font-size:10px; letter-spacing:2px; color:#cfc4e8; text-shadow:0 1px 3px #000; margin:0 0 3px 1px; }
+  .bar { height:13px; background:rgba(8,6,14,.72); border:1px solid rgba(255,255,255,.25); border-radius:3px; overflow:hidden; margin-bottom:7px; }
+  .bar > div { height:100%; transition:width .18s ease; }
+  #healthfill { background:linear-gradient(90deg,#ff5d73,#ff9d5c); width:100%; }
+  #speedwrap { position:absolute; right:20px; bottom:18px; text-align:right; }
+  #speedo { font-size:44px; font-weight:800; line-height:.95; text-shadow:0 3px 12px rgba(0,0,0,.8); }
+  #speedo small { font-size:13px; font-weight:600; color:#cfc4e8; letter-spacing:1px; }
+  #gear { font-size:12px; letter-spacing:2px; color:#ffb36b; text-shadow:0 1px 4px #000; }
+  #weapon { position:absolute; right:20px; bottom:86px; text-align:right; text-shadow:0 2px 6px #000; }
+  #weapon .wname { font-size:13px; letter-spacing:2px; color:#ffd94d; font-weight:700; }
+  #weapon .ammo { font-size:24px; font-weight:800; }
+  #weapon .ammo small { font-size:14px; color:#cfc4e8; }
+  #objective { position:absolute; top:16px; left:50%; transform:translateX(-50%); width:min(560px,72vw); text-align:center;
+    background:linear-gradient(180deg, rgba(16,10,28,.82), rgba(16,10,28,.55)); border:1px solid rgba(255,179,107,.35);
+    border-radius:10px; padding:8px 18px 9px; box-shadow:0 6px 24px rgba(0,0,0,.45); }
+  #objtitle { font-size:16px; font-weight:800; letter-spacing:1.5px; color:#ffb36b; }
+  #objsub { font-size:13.5px; color:#f3eefc; margin-top:2px; }
+  #objmeta { font-size:12.5px; color:#7dffb0; font-weight:700; margin-top:2px; letter-spacing:.5px; }
+  #subtitle { position:absolute; left:50%; bottom:118px; transform:translateX(-50%); width:min(680px,86vw); text-align:center;
+    font-size:17.5px; line-height:1.35; text-shadow:0 2px 6px #000, 0 0 22px rgba(0,0,0,.9); }
+  #subtitle .who { font-weight:800; letter-spacing:1px; margin-right:8px; }
+  #prompt { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); background:rgba(10,8,18,.78);
+    border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:7px 16px; font-size:15px; }
+  #prompt b { color:#ffd94d; }
+  #banner { position:absolute; top:31%; left:0; right:0; text-align:center; pointer-events:none; }
+  #banner .big { font-size:52px; font-weight:900; letter-spacing:6px; color:#ffd94d; text-shadow:0 0 34px rgba(255,150,40,.55), 0 4px 14px rgba(0,0,0,.85); }
+  #banner .small { font-size:19px; letter-spacing:2px; color:#f3eefc; text-shadow:0 2px 8px #000; margin-top:6px; }
+  #cross { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:20px; color:rgba(255,255,255,.9); text-shadow:0 0 6px #000; }
+  #vig { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, transparent 55%, rgba(200,10,30,.55) 100%); opacity:0; transition:opacity .12s; }
+  #bigmapwrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(5,4,10,.55); }
+  #bigmap { border-radius:14px; border:2px solid rgba(255,255,255,.25); box-shadow:0 20px 60px rgba(0,0,0,.7); }
+  /* ---------- Overlays / menus ---------- */
+  .overlay { position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; flex-direction:column;
+    background:radial-gradient(ellipse at 50% 120%, rgba(255,110,60,.20), transparent 60%), linear-gradient(180deg, rgba(14,8,24,.55), rgba(10,6,18,.88)); }
+  .title { font-size:min(84px,11vw); font-weight:900; letter-spacing:8px; line-height:1;
+    background:linear-gradient(180deg,#ffe9a8,#ff9d5c 55%,#ff5d8f); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 6px 26px rgba(255,110,80,.35)); }
+  .tagline { font-size:17px; letter-spacing:5px; color:#cfc4e8; margin:10px 0 4px; }
+  .panel { background:rgba(14,10,24,.82); border:1px solid rgba(255,179,107,.3); border-radius:14px; padding:22px 30px; margin-top:22px;
+    box-shadow:0 18px 50px rgba(0,0,0,.6); max-width:min(620px,92vw); }
+  .panel h2 { margin:0 0 12px; font-size:21px; letter-spacing:2px; color:#ffb36b; }
+  .panel p { margin:6px 0; font-size:14.5px; line-height:1.5; color:#e8e2f5; }
+  .btns { display:flex; gap:12px; margin-top:24px; flex-wrap:wrap; justify-content:center; }
+  button { pointer-events:auto; cursor:pointer; font:inherit; font-weight:800; letter-spacing:1.5px; font-size:15px; color:#17101f;
+    background:linear-gradient(180deg,#ffd94d,#ff9d5c); border:none; border-radius:9px; padding:12px 26px; box-shadow:0 6px 18px rgba(255,140,60,.35); }
+  button:hover { filter:brightness(1.1); }
+  button.ghost { background:rgba(255,255,255,.1); color:#f3eefc; border:1px solid rgba(255,255,255,.35); box-shadow:none; }
+  .controls { display:grid; grid-template-columns:auto 1fr; gap:4px 16px; font-size:13.5px; margin-top:8px; }
+  .controls b { color:#ffd94d; font-weight:700; white-space:nowrap; }
+  .setrow { display:flex; justify-content:space-between; align-items:center; gap:26px; margin:9px 0; font-size:14.5px; }
+  .setrow button { padding:6px 16px; font-size:13px; }
+  #overTitle { font-size:56px; font-weight:900; letter-spacing:6px; }
+  #toast { position:fixed; top:86px; right:18px; z-index:9; text-align:right; pointer-events:none; }
+  .toastitem { background:rgba(10,8,18,.8); border-left:4px solid #7dffb0; border-radius:6px; padding:8px 14px; margin-bottom:8px;
+    font-size:14.5px; font-weight:700; box-shadow:0 6px 18px rgba(0,0,0,.5); animation:toastin .25s ease; }
+  @keyframes toastin { from { transform:translateX(30px); opacity:0; } }
+  #fade { position:fixed; inset:0; background:#000; z-index:20; pointer-events:none; opacity:0; transition:opacity .45s; }
+  #status { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="Neon Harbor: an open-world driving and on-foot game set in the port city of Port Solace"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="vig"></div>
+  <div id="topbar">
+    <div id="stars"></div>
+    <div id="cash">$0<small>PORT SOLACE</small></div>
+  </div>
+  <div id="objective" class="hidden"><div id="objtitle"></div><div id="objsub"></div><div id="objmeta"></div></div>
+  <div id="bl">
+    <canvas id="minimap" width="172" height="172"></canvas>
+    <div id="bars">
+      <p class="barlabel">HEALTH</p>
+      <div class="bar"><div id="healthfill"></div></div>
+      <p class="barlabel" id="carlabel">VEHICLE</p>
+      <div class="bar"><div id="carfill" style="background:linear-gradient(90deg,#4dc9ff,#7dffb0); width:100%"></div></div>
+    </div>
+  </div>
+  <div id="weapon" class="hidden"><div class="wname">PISTOL</div><div class="ammo"><span id="mag">12</span> <small>/ <span id="reserve">48</span></small></div></div>
+  <div id="speedwrap" class="hidden"><div id="speedo">0<small> KM/H</small></div><div id="gear"></div></div>
+  <div id="subtitle" class="hidden"></div>
+  <div id="prompt" class="hidden"></div>
+  <div id="banner" class="hidden"><div class="big"></div><div class="small"></div></div>
+  <div id="cross" class="hidden">+</div>
+  <div id="bigmapwrap" class="hidden"><canvas id="bigmap" width="640" height="640"></canvas></div>
+</div>
+<div id="toast"></div>
+
+<div id="menu" class="overlay">
+  <div class="title">NEON HARBOR</div>
+  <div class="tagline">PORT SOLACE &nbsp;·&nbsp; ONE COURIER &nbsp;·&nbsp; ONE LONG NIGHT</div>
+  <div class="btns">
+    <button id="btnNew">NEW GAME</button>
+    <button id="btnContinue" class="ghost hidden">CONTINUE</button>
+    <button id="btnHow" class="ghost">HOW TO PLAY</button>
+  </div>
+  <div class="panel hidden" id="howpanel">
+    <h2>THE JOB</h2>
+    <p>You are <b>Rook</b>, a courier driving for fixer <b>Mama Sol</b>. Take jobs at the gold marker by Sol's Diner,
+       run packages across Port Solace, and stay ahead of the Vipers — and the law. Finish all six jobs to own the night.
+       Between jobs, the <b style="color:#7dd7ff">blue marker</b> at Solace Couriers pays for repeat delivery runs.</p>
+    <div class="controls">
+      <b>W A S D</b><span>Move / drive</span>
+      <b>Mouse</b><span>Look (click the game to capture the mouse)</span>
+      <b>Shift / Space</b><span>Sprint / jump</span>
+      <b>F</b><span>Enter or exit a car — any car</span>
+      <b>1</b><span>Draw or holster the pistol</span>
+      <b>Mouse click</b><span>Punch, or fire when the pistol is drawn</span>
+      <b>R</b><span>Reload</span>
+      <b>M</b><span>Big map</span>
+      <b>N</b><span>Music on / off</span>
+      <b>Esc / P</b><span>Pause</span>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:14px; padding:14px 30px;">
+    <div class="setrow"><span>Music</span><button id="setMusic">ON</button></div>
+    <div class="setrow"><span>Shadows</span><button id="setShadows">ON</button></div>
+    <div class="setrow"><span>Sound</span><button id="setSound">ON</button></div>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden">
+  <div class="title" style="font-size:52px;">PAUSED</div>
+  <div class="btns">
+    <button id="btnResume">RESUME</button>
+    <button id="btnSave" class="ghost">SAVE GAME</button>
+    <button id="btnQuit" class="ghost">QUIT TO TITLE</button>
+  </div>
+  <div class="panel" style="margin-top:16px; padding:14px 30px;">
+    <div class="setrow"><span>Music</span><button id="setMusic2">ON</button></div>
+    <div class="setrow"><span>Shadows</span><button id="setShadows2">ON</button></div>
+    <div class="setrow"><span>Sound</span><button id="setSound2">ON</button></div>
+  </div>
+</div>
+
+<div id="over" class="overlay hidden">
+  <div id="overTitle">WASTED</div>
+  <div class="tagline" id="overSub">The harbor keeps your fee.</div>
+  <div class="btns"><button id="btnRespawn">CONTINUE</button></div>
+</div>
+
+<div id="fade"></div>
+<p id="status" role="status" aria-live="polite"></p>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
